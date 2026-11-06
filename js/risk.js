@@ -116,14 +116,23 @@ window.Risk = (function () {
   }
 
   // 0–100 score for the staff dashboard. Not shown to students.
+  // Each below-threshold signal adds 20 points, each heads-up adds 8. The total
+  // is eased onto 0-100 so many small flags don't max out the score.
   function score(list) {
-    const raw = list.reduce((n, x) => n + LEVEL_WEIGHT[x.level], 0);
-    return Math.min(100, Math.round((raw / 12) * 100));
+    const raw = list.reduce((n, x) => n + (x.level === "alert" ? 20 : x.level === "watch" ? 8 : 0), 0);
+    return Math.round(100 * (1 - Math.exp(-raw / 70)));
+  }
+
+  // high / medium / low band used for colours and filters on the staff side
+  function riskBand(n) {
+    if (n >= 60) return "high";
+    if (n >= 25) return "medium";
+    return "low";
   }
 
   function metricLevel(value, t, lowerIsWorse) {
     return band(value, t, lowerIsWorse);
   }
 
-  return { signals, score, metricLevel, daysBetween };
+  return { signals, score, riskBand, metricLevel, daysBetween };
 })();

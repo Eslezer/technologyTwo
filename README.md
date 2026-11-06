@@ -16,23 +16,37 @@ Everything runs in the browser as plain HTML, CSS and JavaScript. There's no bui
 | Surveys | A mandatory wellbeing check-in each trimester plus optional surveys (About you, Study habits). Each survey explains why we ask and who sees the answers, and has a "Prefer not to say" option. Answers feed the risk rules. |
 | Alerts & privacy | Students can turn their own alerts off (staff notifications stay on). The page also shows the thresholds and a table of what data is used and who sees it. |
 
-**Staff view** (`#/staff`): a placeholder for the next sprint. It already shows the demo student's risk score and signals, using the same engine.
+**Staff view** (`#/staff`): a lecturer's view of their students. Switch to it with **Viewing as: Staff** or the **Let's help** button.
+
+| Part | What it does |
+|---|---|
+| Subjects | "All my subjects" or one subject. Each shows how many students are high risk. |
+| Student list | Sorted by risk, highest first, by default. You can also sort by lowest grade, lowest attendance, most overdue, longest inactive or name. Search by name or student number. The summary tiles filter to high, medium or referred students. |
+| Pins | Pinned students stay at the top. Tomas and Cindy are pinned in the demo, as in the sketch. |
+| Student profile | **How to help** lists suggested actions (extension, recordings, refer to Academic support, study load before the withdrawal date, and so on), each with *Write message*, *Refer*, *Mark done* or *Not needed*. The profile also shows why the student is flagged, progress in your subjects (other subjects show only on track or needs attention), attendance by week, wellbeing status and an activity timeline. |
+| Message / Refer | A prefilled message from a template, or a referral to Student Support, counselling, Academic support and others, with urgency, reasons and an optional "let the student know". |
+
+Jordan Lee (marked **Live demo**) is the same student as the student view. Their check-in, "I'm fine, thanks" replies and survey answers change their staff-side score, and messages or referrals you send appear in Jordan's **For you** list.
+
+The class roster is generated from a fixed seed in `js/roster.js`. Lecturers never see check-in answers, only whether Student Support is following up.
 
 ## Project layout
 
 ```
 index.html        app shell (side nav, page tabs)
 css/styles.css    LearnJCU look: #1372BA, Noto Serif titles, Open Sans body
+css/staff.css     staff view and "Let's help" button
 js/data.js        demo data: student, subjects, thresholds, forum, surveys
-js/risk.js        risk rules → signals (ok / watch / alert) + 0-100 score
+js/roster.js      demo class roster for the staff view (seeded)
+js/risk.js        risk rules → signals (ok / watch / alert), 0-100 score, high/medium/low band
 js/store.js       localStorage wrapper (demo state survives reloads)
 js/ui.js          icons, toast, modal, helpers
 js/student.js     student view
-js/staff.js       staff view (to build next)
+js/staff.js       staff view: student list, profile, message and refer
 js/app.js         hash router
 ```
 
-To change when alerts trigger, edit `thresholds` in `js/data.js`. To add a staff page, extend `js/staff.js` and add a tab in `renderTabs()` in `js/app.js`.
+To change when alerts trigger, edit `thresholds` in `js/data.js`. To change what counts as high or medium risk, edit `score()` and `riskBand()` in `js/risk.js`. After changing a file, bump the `?v=` number on the asset links in `index.html` so browsers pick up the new version.
 
 Use **Reset demo** at the bottom of any page to clear saved answers, posts and dismissed alerts.
 

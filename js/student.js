@@ -95,16 +95,7 @@ window.Student = (function () {
     view.innerHTML = subnav(section) + `<div id="section"></div>` + demoFoot();
     view.onclick = view.onsubmit = view.oninput = view.onchange = null;
     fn(view.querySelector("#section"), view);
-    const inner = view.onclick;
-    view.onclick = (e) => {
-      if (e.target.closest("[data-reset]")) {
-        Store.reset();
-        toast("Demo data reset.");
-        renderSupport(view, section);
-        return;
-      }
-      if (inner) inner(e);
-    };
+
   }
 
   function demoFoot() {
@@ -288,6 +279,18 @@ window.Student = (function () {
     if (hiddenCount) {
       box.insertAdjacentHTML("beforeend", `<p style="margin:10px 0 0"><button class="btn ghost small" data-restore>Show ${hiddenCount} dismissed</button></p>`);
     }
+    // Messages and referrals sent from the staff view
+    const msgs = Store.get("staffMessages", []);
+    if (msgs.length) {
+      box.insertAdjacentHTML("afterbegin", `<div class="nudges" style="margin-bottom:10px">${msgs.map((m) => `
+        <article class="nudge staff-msg">
+          <span class="n-icon">${icon(m.referral ? "users" : "mail")}</span>
+          <div class="n-title">${esc(m.subject)}</div>
+          <div>
+            <details><summary>From ${esc(m.from)}</summary><p class="msg-body">${esc(m.body)}</p></details>
+          </div>
+        </article>`).join("")}</div>`);
+    }
 
     box.onclick = (e) => {
       const b = e.target.closest("button, a");
@@ -338,8 +341,8 @@ window.Student = (function () {
   }
 
   /* ---------- attendance chart ---------- */
-  function attendanceChart(card) {
-    const data = S.attendanceByWeek;
+  function attendanceChart(card, series) {
+    const data = series || S.attendanceByWeek;
     if (card.dataset.table === "1") {
       card.innerHTML = `<table class="data-table"><thead><tr><th>Week</th><th>Attendance</th><th>vs expected (${T.attendance.watch}%)</th></tr></thead><tbody>
         ${data.map((v, i) => `<tr><td>Week ${i + 1}</td><td>${v}%</td><td>${v - T.attendance.watch > 0 ? "+" : ""}${v - T.attendance.watch} pts</td></tr>`).join("")}
@@ -859,5 +862,5 @@ window.Student = (function () {
     };
   }
 
-  return { renderGrades, renderSupport };
+  return { renderGrades, renderSupport, meter, attendanceChart, demoFoot };
 })();

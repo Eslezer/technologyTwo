@@ -22,14 +22,18 @@
     { label: "Sign Out", icon: "logout", href: "#" },
   ];
 
-  function renderNav() {
+  function renderNav(role) {
+    const who = role === "staff" ? DEMO.staff.name : DEMO.student.fullName;
+    const ini = who.replace(/^Dr /, "").split(" ").map((x) => x[0]).slice(0, 2).join("");
+    const home = role === "staff" ? "#/staff" : "#/support/overview";
     document.getElementById("nav-list").innerHTML = NAV.map((n) => {
-      const lead = n.avatar
-        ? `<span class="avatar">${DEMO.student.preferredName.charAt(0)}${DEMO.student.fullName.split(" ")[1].charAt(0)}</span>`
-        : icon(n.icon);
+      const lead = n.avatar ? `<span class="avatar">${ini}</span>` : icon(n.icon);
+      const label = n.avatar ? who : n.label;
+      const href = n.key === "grades" ? home : n.href;
       const badge = n.badge ? `<span class="badge" aria-label="${n.badge} unread">${n.badge}</span>` : "";
-      return `<li><a href="${n.href}" class="${n.key === "grades" ? "active" : ""}" ${n.key === "grades" ? 'aria-current="page"' : ""}>${lead}<span>${UI.esc(n.label)}</span>${badge}</a></li>`;
-    }).join("");
+      return `<li><a href="${href}" class="${n.key === "grades" ? "active" : ""}" ${n.key === "grades" ? 'aria-current="page"' : ""}>${lead}<span>${UI.esc(label)}</span>${badge}</a></li>`;
+    }).join("") +
+      `<li class="lets-help"><a href="${home}">${icon("heart")}<span>Let's help</span></a></li>`;
   }
 
   function renderTabs(route) {
@@ -49,16 +53,17 @@
 
   function parse() {
     const parts = (location.hash || "#/support/overview").replace(/^#\/?/, "").split("/");
-    if (parts[0] === "staff") return { role: "staff", page: "staff" };
+    if (parts[0] === "staff") return { role: "staff", page: "staff", parts: parts.slice(1) };
     if (parts[0] === "grades") return { role: "student", page: "grades" };
     return { role: "student", page: "support", section: parts[1] || "overview" };
   }
 
   function route() {
     const r = parse();
+    renderNav(r.role);
     renderTabs(r);
     view.onclick = view.onsubmit = view.oninput = view.onchange = null;
-    if (r.page === "staff") Staff.render(view);
+    if (r.page === "staff") Staff.render(view, r.parts);
     else if (r.page === "grades") Student.renderGrades(view);
     else Student.renderSupport(view, r.section);
     shell.classList.remove("nav-open");
@@ -83,7 +88,14 @@
     if (e.target.id === "modal") UI.modal.close();
   });
 
-  renderNav();
+  // "Reset demo" footer button (student and staff pages)
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("[data-reset]")) return;
+    Store.reset();
+    UI.toast("Demo data reset.");
+    route();
+  });
+
   window.addEventListener("hashchange", () => { route(); window.scrollTo(0, 0); });
   route();
 })();
