@@ -149,8 +149,8 @@ window.Staff = (function () {
 
           <div class="grid tiles staff-tiles">
             <button class="card tile ${ui.filter === "all" ? "sel" : ""}" data-filter="all"><span class="label">Students</span><span class="value">${enrolled.length}</span></button>
-            <button class="card tile ${ui.filter === "high" ? "sel" : ""}" data-filter="high"><span class="label">${chip("alert", "High risk")}</span><span class="value">${high}</span></button>
-            <button class="card tile ${ui.filter === "medium" ? "sel" : ""}" data-filter="medium"><span class="label">${chip("watch", "Medium")}</span><span class="value">${med}</span></button>
+            <button class="card tile ${ui.filter === "high" ? "sel" : ""}" data-filter="high"><span class="label">${chip("alert", "High risk", true)}</span><span class="value">${high}</span></button>
+            <button class="card tile ${ui.filter === "medium" ? "sel" : ""}" data-filter="medium"><span class="label">${chip("watch", "Medium", true)}</span><span class="value">${med}</span></button>
             <button class="card tile ${ui.filter === "referred" ? "sel" : ""}" data-filter="referred"><span class="label"><span class="chip blue">${icon("users")}Referred</span></span><span class="value">${referred}</span></button>
             <div class="card tile"><span class="label"><span class="chip neutral">${icon("clipboard")}Did check-in</span></span><span class="value">${checkins}<small class="sub"> / ${enrolled.length}</small></span></div>
           </div>

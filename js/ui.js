@@ -19,6 +19,7 @@ window.UI = (function () {
     alert: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
     eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    eyeOff: '<path d="M3 3l18 18"/><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6 0 10 7 10 7a17.8 17.8 0 0 1-3.2 3.9M6.6 6.6C3.8 8.4 2 12 2 12s4 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
     lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
     shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
     bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
@@ -56,9 +57,16 @@ window.UI = (function () {
     alert: { label: "Needs attention", icon: "alert" },
     info: { label: "Optional", icon: "spark" },
   };
-  function chip(level, text) {
+  // Status chips (ok / watch / alert) show only their icon: check, i or warning
+  // sign, each in its own colour. The label stays available as a tooltip and to
+  // screen readers. Pass showText = true where the words are needed.
+  function chip(level, text, showText) {
     const l = LEVEL[level];
-    return `<span class="chip ${level}">${icon(l.icon)}${esc(text || l.label)}</span>`;
+    const label = esc(text || l.label);
+    if (!showText && level !== "info") {
+      return `<span class="chip ${level} icon-only" role="img" aria-label="${label}" title="${label}">${icon(l.icon)}</span>`;
+    }
+    return `<span class="chip ${level}">${icon(l.icon)}${label}</span>`;
   }
 
   let toastTimer;

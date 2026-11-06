@@ -28,9 +28,15 @@ window.Student = (function () {
     return a;
   }
 
+  // Subjects the student has hidden from My progress. Hidden subjects don't
+  // count towards their averages, tiles or alerts (staff still see them).
+  const hiddenSubjects = () => Store.get("hiddenSubjects", []);
+  const visibleSubjects = () => S.subjects.filter((s) => !hiddenSubjects().includes(s.code));
+
   function activeSignals() {
     const d = dismissed();
-    return Risk.signals(D, answers()).filter((s) => !d[s.id]);
+    const me = Object.assign({}, S, { subjects: visibleSubjects() });
+    return Risk.signals(Object.assign({}, D, { student: me }), answers()).filter((s) => !d[s.id]);
   }
 
   /* ---------- shared bits ---------- */
@@ -114,12 +120,15 @@ window.Student = (function () {
     const alerts = sig.filter((s) => s.level === "alert");
     const overall = alerts.length ? "alert" : sig.length ? "watch" : "ok";
 
-    const attAvg = Math.round(S.subjects.reduce((n, s) => n + s.attendance, 0) / S.subjects.length);
-    const attWeek = S.attendanceByWeek[S.attendanceByWeek.length - 1];
-    const submitted = S.subjects.reduce((n, s) => n + s.submitted, 0);
-    const dueSoFar = S.subjects.reduce((n, s) => n + s.dueSoFar, 0);
-    const totalAssess = S.subjects.reduce((n, s) => n + s.total, 0);
-    const overdue = S.subjects.reduce((n, s) => n + s.overdue.length, 0);
+    const vis = visibleSubjects();
+    const hidden = S.subjects.filter((s) => !vis.includes(s));
+    const avgOf = (k) => (vis.length ? Math.round(vis.reduce((n, s) => n + s[k], 0) / vis.length) : 0);
+    const attAvg = avgOf("attendance");
+    const gradeAvg = avgOf("grade");
+    const submitted = vis.reduce((n, s) => n + s.submitted, 0);
+    const dueSoFar = vis.reduce((n, s) => n + s.dueSoFar, 0);
+    const totalAssess = vis.reduce((n, s) => n + s.total, 0);
+    const overdue = vis.reduce((n, s) => n + s.overdue.length, 0);
     const gpaLevel = Risk.metricLevel(S.gpa.term, T.gpa, true);
     const attLevel = Risk.metricLevel(attAvg, T.attendance, true);
     const subLevel = Risk.metricLevel(overdue, T.overdue, false);
@@ -138,13 +147,6 @@ window.Student = (function () {
         <button class="btn" data-survey="${checkin.id}">Take part</button>
       </div>` : ""}
 
-      <section class="section" aria-labelledby="h-links">
-        <div class="section-head"><h2 id="h-links">Get support</h2><p>Free for all JCU students</p></div>
-        <div class="quick-links">
-          ${D.supportLinks.map((l) => `<a class="quick-link" href="${l.href}" data-link="${l.id}"><span class="ql-icon">${icon(l.icon)}</span><strong>${esc(l.title)}</strong></a>`).join("")}
-        </div>
-      </section>
-
       <div class="split">
         <div>
           <section class="section" aria-labelledby="h-progress">
@@ -157,16 +159,16 @@ window.Student = (function () {
 
             <div class="grid tiles" style="margin-bottom:12px">
               <div class="card tile">
-                <div class="label">Trimester GPA ${chip(gpaLevel, gpaLevel === "ok" ? "On track" : gpaLevel === "watch" ? "Watch" : "Low")}</div>
+                <div class="label">Trimester GPA ${chip(gpaLevel, gpaLevel === "ok" ? "On track" : gpaLevel === "watch" ? "Keep an eye on" : "Below threshold")}</div>
                 <div class="value">${S.gpa.term.toFixed(1)}<small> / 7</small></div>
                 ${meter(S.gpa.term, 7, { expected: S.gpa.cumulative, threshold: T.gpa.alert, level: gpaLevel, label: `GPA ${S.gpa.term} of 7, your usual ${S.gpa.cumulative}` })}
                 <div class="note">Your usual: ${S.gpa.cumulative.toFixed(1)}</div>
               </div>
               <div class="card tile">
-                <div class="label">Attendance ${chip(attLevel, attLevel === "ok" ? "On track" : attLevel === "watch" ? "Watch" : "Low")}</div>
+                <div class="label">Attendance ${vis.length ? chip(attLevel, attLevel === "ok" ? "On track" : attLevel === "watch" ? "Keep an eye on" : "Below threshold") : ""}</div>
                 <div class="value">${attAvg}%</div>
                 ${meter(attAvg, 100, { expected: T.attendance.watch, threshold: T.attendance.alert, level: attLevel, label: `Attendance ${attAvg}%, expected ${T.attendance.watch}%` })}
-                <div class="note">This week: ${attWeek}% · expected ${T.attendance.watch}%</div>
+                <div class="note">Across ${vis.length} subject${vis.length === 1 ? "" : "s"} · expected ${T.attendance.watch}%</div>
               </div>
               <div class="card tile">
                 <div class="label">Assessments ${chip(subLevel, subLevel === "ok" ? "On track" : `${overdue} overdue`)}</div>
@@ -175,7 +177,7 @@ window.Student = (function () {
                 <div class="note">${totalAssess - dueSoFar} still to come this trimester</div>
               </div>
               <div class="card tile">
-                <div class="label">Check-in ${checkinDone ? chip("ok", "In the draw") : '<span class="chip blue">Optional</span>'}</div>
+                <div class="label">Check-in ${checkinDone ? chip("ok", "Done, you're in the draw") : '<span class="chip blue">Optional</span>'}</div>
                 <div class="value">${checkinDone ? "Done" : daysLeft >= 0 ? `${daysLeft}<small> days left</small>` : "Closed"}</div>
                 <div class="note">${checkinDone ? "Thanks! Winners drawn after it closes" : `Closes ${fmtDate(checkin.due)} · prize draw`}</div>
               </div>
@@ -189,15 +191,23 @@ window.Student = (function () {
             <div class="table-wrap">
               <table class="subjects">
                 <caption class="sr-only">Progress by subject</caption>
-                <thead><tr><th>Subject</th><th>Grade so far</th><th>Attendance</th><th>Submitted</th><th>Status</th></tr></thead>
-                <tbody>${S.subjects.map(subjectRow).join("")}</tbody>
+                <thead><tr><th>Subject</th><th>Grade so far</th><th>Attendance</th><th>Submitted</th><th>Status</th><th><span class="sr-only">Hide</span></th></tr></thead>
+                <tbody>${vis.length ? vis.map(subjectRow).join("") : `<tr><td colspan="6" class="empty-row">All subjects are hidden.</td></tr>`}</tbody>
+                ${vis.length ? averageRow(vis, gradeAvg, attAvg, submitted, dueSoFar, totalAssess, overdue) : ""}
               </table>
             </div>
+            ${hidden.length ? `<div class="hidden-subjects">
+              ${icon("eye")}<span>Hidden from your progress:</span>
+              ${hidden.map((s) => `<button class="btn ghost small" data-unhide="${s.code}" title="Show ${esc(s.name)} again">${s.code} · Show</button>`).join("")}
+            </div>` : ""}
+            <p class="table-note">${icon("info")}Hiding a subject removes it from your averages and alerts. Your lecturers and Student Support still see it.</p>
           </section>
 
-          <section class="section" aria-labelledby="h-att">
-            <div class="section-head"><h2 id="h-att">Attendance by week</h2><button class="btn ghost small chart-toggle" data-toggle-table aria-expanded="false">Show as table</button></div>
-            <div class="card chart-card" id="att-chart"></div>
+          <section class="section" aria-labelledby="h-links">
+            <div class="section-head"><h2 id="h-links">Get support</h2><p>Free for all JCU students</p></div>
+            <div class="quick-links">
+              ${D.supportLinks.map((l) => `<a class="quick-link" href="${l.href}" data-link="${l.id}"><span class="ql-icon">${icon(l.icon)}</span><strong>${esc(l.title)}</strong></a>`).join("")}
+            </div>
           </section>
         </div>
 
@@ -216,21 +226,23 @@ window.Student = (function () {
       </div>`;
 
     renderNudges(el.querySelector("#nudges"), view);
-    attendanceChart(el.querySelector("#att-chart"));
 
     view.onclick = (e) => {
       const sv = e.target.closest("[data-survey]");
       if (sv) { openSurvey(sv.dataset.survey, view); return; }
       const ql = e.target.closest("[data-link]");
       if (ql) { e.preventDefault(); const l = D.supportLinks.find((x) => x.id === ql.dataset.link); toast(`${l.title} would open here.`); return; }
-      const tt = e.target.closest("[data-toggle-table]");
-      if (tt) {
-        const card = el.querySelector("#att-chart");
-        const showing = card.dataset.table === "1";
-        card.dataset.table = showing ? "0" : "1";
-        tt.textContent = showing ? "Show as table" : "Show as chart";
-        tt.setAttribute("aria-expanded", String(!showing));
-        attendanceChart(card);
+      const hide = e.target.closest("[data-hide]");
+      if (hide) {
+        const h = hiddenSubjects(); h.push(hide.dataset.hide); Store.set("hiddenSubjects", h);
+        toast(`${hide.dataset.hide} hidden. It no longer counts towards your averages or alerts.`);
+        refresh(view); return;
+      }
+      const unhide = e.target.closest("[data-unhide]");
+      if (unhide) {
+        Store.set("hiddenSubjects", hiddenSubjects().filter((c) => c !== unhide.dataset.unhide));
+        toast(`${unhide.dataset.unhide} is back in your progress.`);
+        refresh(view);
       }
     };
   }
@@ -246,7 +258,23 @@ window.Student = (function () {
       <td class="metric"><span class="num">${s.attendance}%</span> <span class="exp">exp. ${T.attendance.watch}%</span>${meter(s.attendance, 100, { expected: T.attendance.watch, threshold: T.attendance.alert, level: at, label: `${s.attendance}% attendance` })}</td>
       <td class="metric"><span class="num">${s.submitted}/${s.dueSoFar}</span> <span class="exp">due so far</span>${meter(s.submitted, s.total, { expected: s.dueSoFar, level: od, label: `${s.submitted} of ${s.dueSoFar} due submitted` })}</td>
       <td>${chip(worst)}</td>
+      <td class="row-action"><button class="icon-btn" data-hide="${s.code}" aria-label="Hide ${esc(s.code)} ${esc(s.name)} from my progress" title="Hide from my progress">${icon("eyeOff")}</button></td>
     </tr>`;
+  }
+
+  function averageRow(vis, gradeAvg, attAvg, submitted, dueSoFar, totalAssess, overdue) {
+    const g = Risk.metricLevel(gradeAvg, T.grade, true);
+    const at = Risk.metricLevel(attAvg, T.attendance, true);
+    const od = Risk.metricLevel(overdue, T.overdue, false);
+    const worst = [g, at, od].includes("alert") ? "alert" : [g, at, od].includes("watch") ? "watch" : "ok";
+    return `<tfoot><tr class="avg-row">
+      <td><div class="code">Average</div><div class="name">${vis.length} subject${vis.length === 1 ? "" : "s"}</div></td>
+      <td class="metric"><span class="num">${gradeAvg}%</span> <span class="exp">pass 50%</span>${meter(gradeAvg, 100, { expected: T.grade.watch, threshold: T.grade.alert, level: g, label: `Average grade ${gradeAvg}%` })}</td>
+      <td class="metric"><span class="num">${attAvg}%</span> <span class="exp">exp. ${T.attendance.watch}%</span>${meter(attAvg, 100, { expected: T.attendance.watch, threshold: T.attendance.alert, level: at, label: `Average attendance ${attAvg}%` })}</td>
+      <td class="metric"><span class="num">${submitted}/${dueSoFar}</span> <span class="exp">due so far</span>${meter(submitted, totalAssess, { expected: dueSoFar, level: od, label: `${submitted} of ${dueSoFar} due submitted in total` })}</td>
+      <td>${chip(worst)}</td>
+      <td></td>
+    </tr></tfoot>`;
   }
 
   function dateRow(k) {
@@ -320,7 +348,7 @@ window.Student = (function () {
     const canDismiss = s.id !== "checkin";
     return `<article class="nudge ${s.level}">
       <span class="n-icon">${icon(UI.LEVEL[s.level].icon)}</span>
-      <div class="n-title">${esc(s.title)} ${chip(s.level, s.level === "alert" ? "Below threshold" : "Heads up")}</div>
+      <div class="n-title">${esc(s.title)}</div>
       <div>
         <div class="n-actions">
           ${act}
@@ -659,7 +687,7 @@ window.Student = (function () {
   function surveyCard(s, a, skipped) {
     const done = !!a[s.id];
     const days = s.due ? Risk.daysBetween(D.term.today, s.due) : null;
-    const status = done ? chip("ok", s.prize ? "In the draw" : "Completed") : skipped[s.id] ? '<span class="chip neutral">Not interested</span>' : '<span class="chip neutral">Optional</span>';
+    const status = done ? chip("ok", s.prize ? "Completed, you're in the draw" : "Completed") : skipped[s.id] ? '<span class="chip neutral">Not interested</span>' : '<span class="chip neutral">Optional</span>';
     return `<div class="card survey-card ${s.featured ? "featured" : ""}">
       <div class="top"><h3>${esc(s.title)}</h3>${status}</div>
       ${s.prize ? `<div class="prize-line">${icon("spark")}<span>Finish it to go in the draw for <b>${esc(s.prize)}</b></span></div>` : ""}

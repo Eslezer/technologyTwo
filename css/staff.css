@@ -95,7 +95,7 @@
 .rec-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
 .signal-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); }
-.signal-list li { display: grid; grid-template-columns: 150px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line-soft); }
+.signal-list li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line-soft); }
 .signal-list li:last-child { border-bottom: 0; }
 .signal-list small { color: var(--muted); font-size: 12px; }
 

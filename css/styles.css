@@ -310,7 +310,7 @@ svg.icon { width: 18px; height: 18px; flex-shrink: 0; fill: none; stroke: curren
 .meter-legend .k-thr { width: 0; height: 12px; border-left: 2px dotted var(--crit); }
 
 /* ---------- Subject table ---------- */
-.table-wrap { border: 1px solid var(--line); border-radius: var(--radius); overflow-x: auto; }
+.table-wrap { position: relative; border: 1px solid var(--line); border-radius: var(--radius); overflow-x: auto; }
 table.subjects { width: 100%; border-collapse: collapse; min-width: 600px; }
 table.subjects th, table.subjects td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
 table.subjects th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); font-weight: 600; background: var(--surface-2); }
@@ -578,3 +578,25 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.45); }
   .role-switch span { display: none; }
   .scale span { width: 40px; }
 }
+
+
+/* ---------- Icon-only status chips ---------- */
+.chip.icon-only { padding: 4px; border-radius: 50%; gap: 0; }
+.chip.icon-only svg.icon { width: 16px; height: 16px; }
+
+/* ---------- Subjects table: average row, hide button ---------- */
+table.subjects tfoot td { background: var(--surface-2); border-top: 2px solid var(--line); border-bottom: 0; }
+table.subjects .avg-row .code { font-weight: 700; }
+table.subjects .row-action { width: 44px; text-align: right; padding-left: 0; }
+table.subjects .empty-row { text-align: center; color: var(--muted); padding: 20px; }
+.icon-btn { width: 32px; height: 32px; border-radius: 50%; border: 0; background: none; color: var(--muted); cursor: pointer; display: inline-grid; place-items: center; }
+.icon-btn:hover { background: var(--surface-3); color: var(--ink); }
+.icon-btn svg.icon { width: 17px; height: 17px; }
+.hidden-subjects { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 10px; font-size: 13px; color: var(--ink-2); }
+.hidden-subjects > svg.icon { width: 16px; height: 16px; color: var(--muted); }
+.table-note { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+.table-note svg.icon { width: 14px; height: 14px; }
+
+/* Get support now sits in the narrower left column */
+.split .quick-links { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 560px) { .split .quick-links { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
