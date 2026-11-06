@@ -31,7 +31,7 @@
       const label = n.avatar ? who : n.label;
       const href = n.key === "grades" ? home : n.href;
       const badge = n.badge ? `<span class="badge" aria-label="${n.badge} unread">${n.badge}</span>` : "";
-      return `<li><a href="${href}" class="${n.key === "grades" ? "active" : ""}" ${n.key === "grades" ? 'aria-current="page"' : ""}>${lead}<span>${UI.esc(label)}</span>${badge}</a></li>`;
+      return `<li><a href="${href}">${lead}<span>${UI.esc(label)}</span>${badge}</a></li>`;
     }).join("") +
       `<li class="lets-help"><a href="${home}">${icon("heart")}<span>Let's help</span></a></li>`;
   }
