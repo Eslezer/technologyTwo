@@ -150,7 +150,7 @@ window.Student = (function () {
       <section class="section" aria-labelledby="h-links">
         <div class="section-head"><h2 id="h-links">Get support</h2><p>Free for all JCU students</p></div>
         <div class="quick-links">
-          ${D.supportLinks.map((l) => `<a class="quick-link" href="${l.href}" data-link="${l.id}"><span class="ql-icon">${icon(l.icon)}</span><strong>${esc(l.title)}</strong><span>${esc(l.text)}</span></a>`).join("")}
+          ${D.supportLinks.map((l) => `<a class="quick-link" href="${l.href}" data-link="${l.id}"><span class="ql-icon">${icon(l.icon)}</span><strong>${esc(l.title)}</strong></a>`).join("")}
         </div>
       </section>
 
@@ -161,7 +161,7 @@ window.Student = (function () {
 
             <div class="summary">
               <div>${chip(overall)}</div>
-              <div><h3>${esc(headline[0])}</h3><p>${esc(headline[1])}</p></div>
+              <div><h3>${esc(headline[0])}</h3></div>
             </div>
 
             <div class="grid tiles" style="margin-bottom:12px">
@@ -319,7 +319,6 @@ window.Student = (function () {
     return `<article class="nudge ${s.level}">
       <span class="n-icon">${icon(UI.LEVEL[s.level].icon)}</span>
       <div class="n-title">${esc(s.title)} ${chip(s.level, s.level === "alert" ? "Below threshold" : "Heads up")}</div>
-      <p class="n-body">${esc(s.student)}</p>
       <div>
         <div class="n-actions">
           ${act}
@@ -632,11 +631,11 @@ window.Student = (function () {
 
     el.innerHTML = `
       <section class="section">
-        <div class="section-head"><h2>Required this trimester</h2><p>Everyone completes this once each trimester</p></div>
+        <div class="section-head"><h2>Required this trimester</h2></div>
         <div class="grid cols-2">${req.map((s) => surveyCard(s, a, skipped)).join("")}</div>
       </section>
       <section class="section">
-        <div class="section-head"><h2>Optional</h2><p>Share only what you're comfortable with. Every question has “Prefer not to say”.</p></div>
+        <div class="section-head"><h2>Optional</h2></div>
         <div class="grid cols-3">${opt.map((s) => surveyCard(s, a, skipped)).join("")}</div>
       </section>`;
 
@@ -661,7 +660,6 @@ window.Student = (function () {
     const status = done ? chip("ok", "Completed") : s.required ? chip(days < 3 ? "alert" : "watch", `Due in ${days} days`) : skipped[s.id] ? '<span class="chip neutral">Not interested</span>' : '<span class="chip neutral">Optional</span>';
     return `<div class="card survey-card ${s.required ? "required" : ""}">
       <div class="top"><h3>${esc(s.title)}</h3>${status}</div>
-      <p class="sub">${esc(s.summary)}</p>
       <div class="meta"><span>${icon("clock")}About ${s.minutes} min</span><span>${icon("clipboard")}${s.questions.length} questions</span>${s.due ? `<span>${icon("calendar")}Due ${fmtDate(s.due)}</span>` : ""}</div>
       <details><summary>Why we ask and who sees it</summary><p><b>Why:</b> ${esc(s.why)}</p><p><b>Who sees it:</b> ${esc(s.who)}</p></details>
       <div class="foot">
