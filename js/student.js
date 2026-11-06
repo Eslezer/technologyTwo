@@ -10,7 +10,7 @@ window.Student = (function () {
 
   /* ---------- state ---------- */
   const answers = () => Store.get("answers", {});
-  const prefs = () => Object.assign({ inApp: true, email: true, weekly: false }, Store.get("prefs", {}));
+  const prefs = () => Object.assign({ inApp: true, email: true, weekly: false, pulse: true }, Store.get("prefs", {}));
   const dismissed = () => Store.get("dismissed", {});
   function forum() {
     let f = Store.get("forum", null);
@@ -36,7 +36,7 @@ window.Student = (function () {
   /* ---------- shared bits ---------- */
   function subnav(section) {
     const n = activeSignals().filter((s) => s.level === "alert").length;
-    const pending = D.surveys.filter((s) => s.required && !answers()[s.id]).length;
+    const pending = D.surveys.filter((s) => s.featured && !answers()[s.id]).length;
     const items = [
       ["overview", "My progress", "grades", n],
       ["forum", "Student forum", "chat", 0],
@@ -92,14 +92,14 @@ window.Student = (function () {
     document.getElementById("page-title").textContent = "Grades";
     const sections = { overview, forum: forumView, surveys, privacy };
     const fn = sections[section] || overview;
-    view.innerHTML = subnav(section) + `<div id="section"></div>` + demoFoot();
+    view.innerHTML = subnav(section) + `<div id="section"></div>` + demoFoot(true);
     view.onclick = view.onsubmit = view.oninput = view.onchange = null;
     fn(view.querySelector("#section"), view);
 
   }
 
-  function demoFoot() {
-    return `<div class="demo-foot">${icon("info")}<span>Prototype with made-up data. Your changes are saved in this browser only.</span><button class="btn ghost small" data-reset>Reset demo</button></div>`;
+  function demoFoot(studentPage) {
+    return `<div class="demo-foot">${icon("info")}<span>Prototype with made-up data. Your changes are saved in this browser only.</span>${studentPage ? `<button class="btn secondary small" data-pulse-demo>${icon("heart")}Demo: wellbeing pop-up</button>` : ""}<button class="btn ghost small" data-reset>Reset demo</button></div>`;
   }
 
   /* ================================================================
@@ -107,7 +107,7 @@ window.Student = (function () {
   ================================================================ */
   function overview(el, view) {
     const a = answers();
-    const checkin = D.surveys.find((s) => s.required);
+    const checkin = D.surveys.find((s) => s.featured);
     const checkinDone = !!a[checkin.id];
     const daysLeft = Risk.daysBetween(D.term.today, checkin.due);
     const sig = activeSignals();
@@ -132,10 +132,10 @@ window.Student = (function () {
 
     el.innerHTML = `
       ${!checkinDone ? `
-      <div class="banner ${daysLeft < 3 ? "alert" : ""}">
-        <span class="b-icon">${icon("clipboard")}</span>
-        <div class="b-text"><strong>Your trimester check-in is due ${fmtDate(checkin.due)}</strong><p>It's required once a trimester and takes about ${checkin.minutes} minutes. Answers go to Student Support only.</p></div>
-        <button class="btn" data-survey="${checkin.id}">Start check-in</button>
+      <div class="banner prize">
+        <span class="b-icon">${icon("spark")}</span>
+        <div class="b-text"><strong>Mid-trimester check-in: you could win $200</strong><p>Optional, about ${checkin.minutes} minutes. Finish by ${fmtDate(checkin.due)} to go in the draw.</p></div>
+        <button class="btn" data-survey="${checkin.id}">Take part</button>
       </div>` : ""}
 
       <section class="section" aria-labelledby="h-links">
@@ -175,10 +175,9 @@ window.Student = (function () {
                 <div class="note">${totalAssess - dueSoFar} still to come this trimester</div>
               </div>
               <div class="card tile">
-                <div class="label">Check-in ${checkinDone ? chip("ok", "Done") : chip(daysLeft < 0 ? "alert" : "watch", "To do")}</div>
-                <div class="value">${checkinDone ? "Done" : `${daysLeft}<small> days left</small>`}</div>
-                ${meter(checkinDone ? 1 : 0, 1, { level: checkinDone ? "ok" : "watch", label: checkinDone ? "Check-in complete" : "Check-in not started" })}
-                <div class="note">${checkinDone ? "Thanks! Next one in Trimester 1" : `Due ${fmtDate(checkin.due)}`}</div>
+                <div class="label">Check-in ${checkinDone ? chip("ok", "In the draw") : '<span class="chip blue">Optional</span>'}</div>
+                <div class="value">${checkinDone ? "Done" : daysLeft >= 0 ? `${daysLeft}<small> days left</small>` : "Closed"}</div>
+                <div class="note">${checkinDone ? "Thanks! Winners drawn after it closes" : `Closes ${fmtDate(checkin.due)} · prize draw`}</div>
               </div>
             </div>
             <div class="meter-legend" style="margin-bottom:20px">
@@ -629,16 +628,16 @@ window.Student = (function () {
   function surveys(el, view) {
     const a = answers();
     const skipped = Store.get("skipped", {});
-    const req = D.surveys.filter((s) => s.required);
-    const opt = D.surveys.filter((s) => !s.required);
+    const feat = D.surveys.filter((s) => s.featured);
+    const opt = D.surveys.filter((s) => !s.featured);
 
     el.innerHTML = `
       <section class="section">
-        <div class="section-head"><h2>Required this trimester</h2></div>
-        <div class="grid cols-2">${req.map((s) => surveyCard(s, a, skipped)).join("")}</div>
+        <div class="section-head"><h2>Mid-trimester check-in</h2></div>
+        <div class="grid cols-2">${feat.map((s) => surveyCard(s, a, skipped)).join("")}</div>
       </section>
       <section class="section">
-        <div class="section-head"><h2>Optional</h2></div>
+        <div class="section-head"><h2>More surveys</h2></div>
         <div class="grid cols-3">${opt.map((s) => surveyCard(s, a, skipped)).join("")}</div>
       </section>`;
 
@@ -660,15 +659,16 @@ window.Student = (function () {
   function surveyCard(s, a, skipped) {
     const done = !!a[s.id];
     const days = s.due ? Risk.daysBetween(D.term.today, s.due) : null;
-    const status = done ? chip("ok", "Completed") : s.required ? chip(days < 3 ? "alert" : "watch", `Due in ${days} days`) : skipped[s.id] ? '<span class="chip neutral">Not interested</span>' : '<span class="chip neutral">Optional</span>';
-    return `<div class="card survey-card ${s.required ? "required" : ""}">
+    const status = done ? chip("ok", s.prize ? "In the draw" : "Completed") : skipped[s.id] ? '<span class="chip neutral">Not interested</span>' : '<span class="chip neutral">Optional</span>';
+    return `<div class="card survey-card ${s.featured ? "featured" : ""}">
       <div class="top"><h3>${esc(s.title)}</h3>${status}</div>
-      <div class="meta"><span>${icon("clock")}About ${s.minutes} min</span><span>${icon("clipboard")}${s.questions.length} questions</span>${s.due ? `<span>${icon("calendar")}Due ${fmtDate(s.due)}</span>` : ""}</div>
+      ${s.prize ? `<div class="prize-line">${icon("spark")}<span>Finish it to go in the draw for <b>${esc(s.prize)}</b></span></div>` : ""}
+      <div class="meta"><span>${icon("clock")}About ${s.minutes} min</span><span>${icon("clipboard")}${s.questions.length} questions</span>${s.due ? `<span>${icon("calendar")}Closes ${fmtDate(s.due)}${days >= 0 ? ` (${days} days)` : ""}</span>` : ""}</div>
       <details><summary>Why we ask and who sees it</summary><p><b>Why:</b> ${esc(s.why)}</p><p><b>Who sees it:</b> ${esc(s.who)}</p></details>
       <div class="foot">
-        <button class="btn ${done ? "secondary" : ""}" data-survey="${s.id}">${done ? "Update answers" : s.required ? "Start check-in" : "Start"}</button>
-        ${done && !s.required ? `<button class="btn ghost" data-clear="${s.id}">Delete my answers</button>` : ""}
-        ${!done && !s.required ? `<button class="btn ghost" data-skip="${s.id}">${skipped[s.id] ? "Remind me again" : "Not interested"}</button>` : ""}
+        <button class="btn ${done ? "secondary" : ""}" data-survey="${s.id}">${done ? "Update answers" : s.prize ? "Take part" : "Start"}</button>
+        ${done ? `<button class="btn ghost" data-clear="${s.id}">Delete my answers</button>` : ""}
+        ${!done ? `<button class="btn ghost" data-skip="${s.id}">${skipped[s.id] ? "Remind me again" : "Not interested"}</button>` : ""}
       </div>
     </div>`;
   }
@@ -725,7 +725,7 @@ window.Student = (function () {
           <button type="button" class="btn ghost small" data-close aria-label="Close">${icon("x")}</button>
         </div>
         <div class="progress" aria-hidden="true"><div style="width:0%"></div></div>
-        <div class="modal-body">${s.questions.map((q, i) => question(q, i, prev, !s.required)).join("")}</div>
+        <div class="modal-body">${s.questions.map((q, i) => question(q, i, prev, true)).join("")}</div>
         <div class="modal-foot"><span class="sub" data-progress-text></span><div style="display:flex;gap:8px"><button type="button" class="btn ghost" data-close>Save for later</button><button class="btn" type="submit">Submit</button></div></div>
       </form>`);
 
@@ -793,6 +793,7 @@ window.Student = (function () {
       <div class="modal-body thanks">
         <div class="big">${icon("check")}</div>
         <p>Your answers have been saved. You can update them any time this trimester.</p>
+        ${s.prize ? `<p class="prize-line" style="justify-content:center">${icon("spark")}<span>You're in the draw for <b>${esc(s.prize)}</b>. Winners are contacted by student email after ${fmtDate(s.due)}.</span></p>` : ""}
         ${tips.length ? `<ul>${tips.map((t) => `<li>${t}</li>`).join("")}</ul>` : ""}
       </div>
       <div class="modal-foot"><span></span><button class="btn" data-done>Done</button></div>`);
@@ -814,6 +815,7 @@ window.Student = (function () {
             ${row("inApp", "Progress alerts on this page", "Shows “For you” cards when something drops below what's expected.")}
             ${row("email", "Email me about alerts", "Sent to your student email. At most one a week.")}
             ${row("weekly", "Weekly progress summary", "A short Monday email with your attendance, grades and what's due.")}
+            ${row("pulse", "Occasional quick questions", "Now and then, a one-tap question about how you're going (sleep, stress, energy). Only Student Support sees answers.")}
             <div class="toggle-row"><div><strong>Staff notifications</strong><p>If you fall below a threshold (for example, under ${T.attendance.alert}% attendance or ${T.overdue.alert}+ overdue assessments), your Student Support Advisor is told so they can check in. This can't be turned off, but you can always reply “I'm fine, thanks”.</p></div>
               <span class="locked">${icon("lock")}Always on</span></div>
           </div>
@@ -829,7 +831,7 @@ window.Student = (function () {
                 <tr><td>Trimester GPA</td><td>Under ${T.gpa.watch}</td><td>Under ${T.gpa.alert}</td></tr>
                 <tr><td>Overdue assessments</td><td>${T.overdue.watch}</td><td>${T.overdue.alert} or more</td></tr>
                 <tr><td>No subject activity</td><td>${T.inactivityDays.watch} days</td><td>${T.inactivityDays.alert} days</td></tr>
-                <tr><td>Wellbeing check-in</td><td>Due soon</td><td>Overdue, or answers suggest you need support</td></tr>
+                <tr><td>Wellbeing check-in (if you take part)</td><td>Answers show some pressure</td><td>Answers suggest you need support</td></tr>
               </tbody>
             </table>
           </div>
@@ -846,7 +848,7 @@ window.Student = (function () {
               <tr><td>Attendance</td><td>Class check-ins (where recorded)</td><td>You, your lecturers, Student Support</td><td>Progress tracker and alerts</td></tr>
               <tr><td>Activity on LearnJCU</td><td>Logins and page visits</td><td>Student Support (summary only)</td><td>Spotting inactivity. Your routine (from Study habits) is taken into account</td></tr>
               <tr><td>Enrolment and course load</td><td>Student records</td><td>Student Support</td><td>Suggesting study load options</td></tr>
-              <tr><td>Wellbeing check-in</td><td>You (required each trimester)</td><td>Student Support and the wellbeing team. Lecturers only see whether it's done</td><td>Offering support early</td></tr>
+              <tr><td>Wellbeing check-in</td><td>You (optional, mid-trimester)</td><td>Student Support and the wellbeing team. Lecturers only see whether it's done</td><td>Offering support early</td></tr>
               <tr><td>Optional surveys</td><td>You, only if you choose</td><td>Student Support only</td><td>Tailoring support. You can delete your answers any time</td></tr>
               <tr><td>Forum posts and private messages</td><td>You</td><td>Posts: other students (anonymously) and moderators. Messages: only if flagged</td><td>Peer support and safety</td></tr>
             </tbody>

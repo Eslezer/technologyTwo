@@ -1,0 +1,36 @@
+/* Wellbeing pulse pop-up */
+.pulse {
+  position: fixed; right: 20px; bottom: 20px; z-index: 90;
+  width: min(360px, calc(100vw - 32px));
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  padding: 14px 16px;
+  opacity: 0; transform: translateY(16px); pointer-events: none;
+  transition: opacity 180ms, transform 180ms;
+}
+.pulse:empty { display: none; }
+.pulse.show { opacity: 1; transform: none; pointer-events: auto; }
+.pulse-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.pulse-tag { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; font-weight: 700; color: #8a3fa0; text-transform: uppercase; letter-spacing: 0.4px; }
+.pulse-tag svg { width: 15px; height: 15px; }
+.pulse-x { border: 0; background: none; cursor: pointer; color: var(--muted); padding: 4px; border-radius: 4px; display: grid; place-items: center; }
+.pulse-x:hover { background: var(--surface-3); }
+.pulse-x svg { width: 16px; height: 16px; }
+.pulse-q { font-size: 16px; font-weight: 600; margin: 0 0 12px; }
+.pulse-small { font-size: 13px; color: var(--ink-2); margin: -4px 0 12px; }
+.pulse-faces { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.pulse-faces button {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 2px 6px; cursor: pointer;
+}
+.pulse-faces button:hover, .pulse-faces button:focus-visible { border-color: var(--jcu-blue); background: var(--jcu-blue-tint); }
+.pulse-faces span { font-size: 24px; line-height: 1; }
+.pulse-faces small { font-size: 10px; color: var(--muted); text-align: center; line-height: 1.2; }
+.pulse-opts { display: flex; gap: 6px; flex-wrap: wrap; }
+.pulse-foot { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; color: var(--muted); }
+.pulse-foot > span:first-child { display: inline-flex; gap: 4px; align-items: center; }
+.pulse-foot svg { width: 12px; height: 12px; }
+.link-btn { border: 0; background: none; padding: 0; color: var(--link); cursor: pointer; font-size: 11px; text-decoration: underline; }
+@media (max-width: 560px) {
+  .pulse { right: 16px; bottom: 16px; }
+}

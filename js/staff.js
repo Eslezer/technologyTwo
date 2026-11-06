@@ -46,7 +46,8 @@ window.Staff = (function () {
     const adjusted = signals
       .map((x) => (s.fine[x.id] ? Object.assign({}, x, { level: x.level === "alert" ? "watch" : "ok" }) : x));
     const score = Risk.score(adjusted);
-    return Object.assign(s, { signals, score, band: Risk.riskBand(score) });
+    // Shown to staff as a progress score: 100 = fully on track, lower = more at risk
+    return Object.assign(s, { signals, score, progress: 100 - score, band: Risk.riskBand(score) });
   }
 
   function students() {
@@ -82,7 +83,6 @@ window.Staff = (function () {
     if (openRef) out.push(`<span class="chip blue">${icon("users")}Referred</span>`);
     if ((S.log[s.id] || []).some((l) => l.type === "message")) out.push(`<span class="chip neutral">${icon("mail")}Contacted</span>`);
     if (Object.keys(s.fine).length) out.push(`<span class="chip neutral">${icon("smile")}Says they're fine</span>`);
-    if (!s.answers.checkin) out.push(`<span class="chip neutral">${icon("clipboard")}Check-in due</span>`);
     return out.join("");
   }
 
@@ -134,7 +134,7 @@ window.Staff = (function () {
     const high = enrolled.filter((s) => s.band === "high").length;
     const med = enrolled.filter((s) => s.band === "medium").length;
     const referred = enrolled.filter((s) => (S.referrals[s.id] || []).some((r) => r.status === "open")).length;
-    const checkins = enrolled.filter((s) => !s.answers.checkin).length;
+    const checkins = enrolled.filter((s) => s.answers.checkin).length;
     const subjName = ui.subject === "all" ? "All my subjects" : `${ui.subject} ${D.staff.subjects.find((x) => x.code === ui.subject).name}`;
 
     view.innerHTML = `
@@ -152,22 +152,22 @@ window.Staff = (function () {
             <button class="card tile ${ui.filter === "high" ? "sel" : ""}" data-filter="high"><span class="label">${chip("alert", "High risk")}</span><span class="value">${high}</span></button>
             <button class="card tile ${ui.filter === "medium" ? "sel" : ""}" data-filter="medium"><span class="label">${chip("watch", "Medium")}</span><span class="value">${med}</span></button>
             <button class="card tile ${ui.filter === "referred" ? "sel" : ""}" data-filter="referred"><span class="label"><span class="chip blue">${icon("users")}Referred</span></span><span class="value">${referred}</span></button>
-            <div class="card tile"><span class="label"><span class="chip neutral">${icon("clipboard")}Check-in due</span></span><span class="value">${checkins}</span></div>
+            <div class="card tile"><span class="label"><span class="chip neutral">${icon("clipboard")}Did check-in</span></span><span class="value">${checkins}<small class="sub"> / ${enrolled.length}</small></span></div>
           </div>
 
           <div class="forum-toolbar" style="margin-top:16px">
             <label class="search">${icon("search")}<span class="sr-only">Search students</span><input type="search" placeholder="Search by name or student number" value="${esc(ui.q)}" data-q></label>
             <label class="sort-label">Sort by <select data-sort>
-              ${[["risk", "Highest risk (recommended)"], ["grade", "Lowest grade"], ["attendance", "Lowest attendance"], ["overdue", "Most overdue"], ["inactive", "Longest inactive"], ["name", "Name A–Z"]]
+              ${[["risk", "Lowest progress (recommended)"], ["grade", "Lowest grade"], ["attendance", "Lowest attendance"], ["overdue", "Most overdue"], ["inactive", "Longest inactive"], ["name", "Name A–Z"]]
                 .map(([v, l]) => `<option value="${v}" ${ui.sort === v ? "selected" : ""}>${l}</option>`).join("")}
             </select></label>
           </div>
 
-          <div class="roster-head" aria-hidden="true"><span></span><span>Student</span><span>Risk</span><span>Grade</span><span>Attend.</span><span>Overdue</span><span>Status</span></div>
+          <div class="roster-head" aria-hidden="true"><span></span><span>Student</span><span>Progress</span><span>Grade</span><span>Attend.</span><span>Overdue</span><span>Status</span></div>
           ${pinned.length ? `<h3 class="group-title">${icon("pin")}Pinned <span>${pinned.length}</span></h3><div class="roster">${pinned.map((s) => row(s, true)).join("")}</div>` : ""}
           <h3 class="group-title">${pinned.length ? "Everyone else" : "Students"} <span>${rest.length}</span></h3>
           <div class="roster">${rest.length ? rest.map((s) => row(s, false)).join("") : `<div class="empty">No students match.</div>`}</div>
-          <p class="sub" style="margin-top:12px">${icon("info")} Risk combines grades, attendance, submissions, LearnJCU activity and the wellbeing check-in. Pin students to keep them at the top.</p>
+          <p class="sub" style="margin-top:12px">${icon("info")} Progress score: 100 means fully on track, and lower means more at risk. It combines grades, attendance, submissions, LearnJCU activity and the check-in (if they took part). Pin students to keep them at the top.</p>
         </div>
       </div>
       ${Student.demoFoot()}`;
@@ -213,8 +213,8 @@ window.Staff = (function () {
         <small>${top ? esc(top.title) : "No concerns"}</small></div>
       </div>
       <div class="s-risk">
-        <div class="riskbar" role="img" aria-label="Risk score ${s.score} out of 100"><div style="width:${Math.max(4, s.score)}%"></div></div>
-        <span class="s-score">${s.score}</span>${bandChip(s.band)}
+        <div class="riskbar" role="img" aria-label="Progress score ${s.progress} out of 100"><div style="width:${Math.max(3, s.progress)}%"></div></div>
+        <span class="s-score">${s.progress}</span>${bandChip(s.band)}
       </div>
       <div class="s-metrics">
         <div class="s-m ${gl}"><b>${c.grade}%</b><small>Grade</small></div>
@@ -239,7 +239,6 @@ window.Staff = (function () {
       if (kind === "grade" && mine) out.push({ id: x.id, title: "Refer to Academic support", why: x.title, kind: "refer", to: "Academic support (Learning Centre)" });
       if (kind === "inactive" && mine) out.push({ id: x.id, title: "Send a quick check-in message", why: x.title, kind: "message", tpl: "checkin", code });
       if (kind === "gpa") out.push({ id: x.id, title: "Suggest a study plan with an academic adviser", why: x.title, kind: "refer", to: "Academic adviser" });
-      if (x.id === "checkin") out.push({ id: x.id, title: "Remind them to complete the wellbeing check-in", why: x.title, kind: "message", tpl: "survey" });
       if (x.id === "checkin-answers" && x.level === "alert") out.push({ id: x.id, title: "Refer to Student Support (wellbeing)", why: "Wellbeing check-in was flagged", kind: "refer", to: "Student Support Advisor" });
     });
     const withdraw = D.keyDates.find((k) => k.id === "withdraw");
@@ -265,7 +264,9 @@ window.Staff = (function () {
       extension: [`${code}: overdue work`, `Hi ${first},\n\nI noticed ${sub ? sub.overdue.join(" and ") : "some work"} ${sub && sub.overdue.length > 1 ? "are" : "is"} still outstanding. If something has come up, let me know. I can offer a short extension, or you can apply for special consideration.`],
       attendance: [`${code}: catching up`, `Hi ${first},\n\nI've noticed you've missed a few ${code} classes lately. The recordings are on LearnJCU, and you're welcome to book a consultation if you'd like help catching up.`],
       checkin: [`${code}: how are you going?`, `Hi ${first},\n\nI haven't seen you on the ${code} site for a little while. Just checking everything's okay. If you'd like a hand getting back on track, reply here.`],
-      survey: ["Wellbeing check-in reminder", `Hi ${first},\n\nA quick reminder to complete this trimester's wellbeing check-in by ${fmtDate(D.keyDates.find((k) => k.id === "checkin").date)}. It takes about 3 minutes, and only Student Support sees your answers.`],
+      survey: ["Mid-trimester check-in (prize draw)", `Hi ${first},
+
+If you have 3 minutes, the mid-trimester wellbeing check-in is open until ${fmtDate(D.keyDates.find((k) => k.id === "checkin").date)}. It's optional, only Student Support sees your answers, and everyone who finishes goes in the draw for ${D.surveys.find((x) => x.featured).prize}.`],
       studyload: ["Your study options", `Hi ${first},\n\nI wanted to make sure you know your options this trimester. If things are getting on top of you, reducing your study load before ${fmtDate(D.keyDates.find((k) => k.id === "withdraw").date)} means no fail is recorded. An academic adviser can talk it through with you.`],
     };
     const t = T[kind] || T.general;
@@ -303,9 +304,9 @@ window.Staff = (function () {
           </div>
         </div>
         <div class="p-score">
-          <div class="riskbar tall" role="img" aria-label="Risk score ${s.score} out of 100"><div style="width:${Math.max(4, s.score)}%"></div></div>
-          <div><span class="value">${s.score}</span><small> / 100</small> ${bandChip(s.band)}</div>
-          <small class="sub">Risk score${Object.keys(s.fine).length ? " · adjusted for the student's replies" : ""}</small>
+          <div class="riskbar tall" role="img" aria-label="Progress score ${s.progress} out of 100"><div style="width:${Math.max(3, s.progress)}%"></div></div>
+          <div><span class="value">${s.progress}</span><small> / 100</small> ${bandChip(s.band)}</div>
+          <small class="sub">Progress score${Object.keys(s.fine).length ? " · adjusted for the student's replies" : ""}</small>
         </div>
       </div>
 
@@ -372,12 +373,13 @@ window.Staff = (function () {
           <section class="section">
             <div class="section-head"><h2>Wellbeing</h2></div>
             <div class="card kv">
-              <div><span>Check-in</span><b>${s.answers.checkin ? `Completed ${fmtDate(s.checkinDate)}` : `Not done (due ${fmtDate(D.keyDates.find((k) => k.id === "checkin").date)})`}</b></div>
+              <div><span>Check-in</span><b>${s.answers.checkin ? `Completed ${fmtDate(s.checkinDate)}` : "Didn't take part (optional)"}</b></div>
               <div><span>Student Support</span><b>${wellbeingFlag && wellbeingFlag.level === "alert" ? "Following up" : wellbeingFlag ? "Monitoring" : "No concerns raised"}</b></div>
               <div><span>Optional surveys</span><b>${s.sharedOptional ? "Shared with Student Support" : "Not shared"}</b></div>
+              <div><span>Quick questions</span><b>${s.id === "demo-student" ? Pulse.count() : (parseInt(s.id.slice(1), 10) * 7) % 5} answered this week</b></div>
               <div><span>Last on LearnJCU</span><b>${s.lastLoginDaysAgo === 0 ? "Today" : `${s.lastLoginDaysAgo} day${s.lastLoginDaysAgo === 1 ? "" : "s"} ago`}</b></div>
               <div><span>Trimester GPA</span><b>${s.gpa.term.toFixed(1)} <small class="sub">(usually ${s.gpa.cumulative.toFixed(1)})</small></b></div>
-              <p class="sub" style="margin:8px 0 0">${icon("lock")} Check-in answers are only visible to Student Support.</p>
+              <p class="sub" style="margin:8px 0 0">${icon("lock")} Check-in and quick-question answers are only visible to Student Support.</p>
             </div>
           </section>
           <section class="section">
@@ -441,12 +443,12 @@ window.Staff = (function () {
         <div class="modal-body">
           <div class="field"><label for="m-tpl">Start from</label>
             <select id="m-tpl" name="tpl">
-              ${[["general", "General check-in"], ["extension", "Offer an extension"], ["attendance", "Attendance / catching up"], ["checkin", "Haven't seen you online"], ["survey", "Check-in reminder"], ["studyload", "Study load options"]]
+              ${[["general", "General check-in"], ["extension", "Offer an extension"], ["attendance", "Attendance / catching up"], ["checkin", "Haven't seen you online"], ["survey", "Check-in invite (prize draw)"], ["studyload", "Study load options"]]
                 .map(([v, l]) => `<option value="${v}" ${v === tplKind ? "selected" : ""}>${l}</option>`).join("")}
             </select></div>
           <div class="field"><label for="m-sub">Subject</label><input id="m-sub" name="subject" value="${esc(t.subject)}" required></div>
           <div class="field"><label for="m-body">Message</label><textarea id="m-body" name="body" rows="9" required>${esc(t.body)}</textarea>
-            <span class="hint">Keep it friendly and specific. Don't mention their risk score.</span></div>
+            <span class="hint">Keep it friendly and specific. Don't mention their progress score.</span></div>
           <label class="check"><input type="checkbox" name="email" checked> Also send to their student email</label>
         </div>
         <div class="modal-foot"><span class="sub">Demo only: nothing is actually sent.</span><div style="display:flex;gap:8px"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn" type="submit">${icon("send")}Send</button></div></div>

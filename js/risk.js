@@ -7,7 +7,7 @@
    "alert" = below threshold, so staff are notified automatically.
 ------------------------------------------------------------------- */
 window.Risk = (function () {
-  const LEVEL_WEIGHT = { ok: 0, watch: 1, alert: 3 };
+  const LEVEL_WEIGHT = { info: -1, ok: 0, watch: 1, alert: 3 };
 
   function band(value, t, lowerIsWorse) {
     if (lowerIsWorse) {
@@ -79,18 +79,11 @@ window.Risk = (function () {
       }
     });
 
-    // Mandatory check-in
-    const checkin = data.surveys.find((x) => x.required);
+    // Optional mid-trimester check-in. Skipping it is not a risk signal;
+    // only the answers of students who take part are used.
+    const checkin = data.surveys.find((x) => x.featured);
     const done = answers && answers[checkin.id];
-    if (!done) {
-      const daysLeft = daysBetween(data.term.today, checkin.due);
-      out.push({
-        id: "checkin", level: daysLeft < 0 ? "alert" : "watch", source: "Check-in",
-        title: daysLeft < 0 ? "Wellbeing check-in overdue" : `Wellbeing check-in due in ${daysLeft} days`,
-        student: "Everyone completes this short check-in each trimester. It takes about 3 minutes.",
-        action: { label: "Start check-in", survey: checkin.id },
-      });
-    } else {
+    if (done) {
       const a = done;
       const low = ["coping", "workload", "health", "connected"].filter((k) => typeof a[k] === "number" && a[k] <= 2);
       if (low.length >= 2 || a.leaving === "Yes, seriously") {

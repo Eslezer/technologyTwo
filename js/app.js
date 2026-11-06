@@ -63,6 +63,7 @@
     renderNav(r.role);
     renderTabs(r);
     view.onclick = view.onsubmit = view.oninput = view.onchange = null;
+    if (r.role === "staff") Pulse.hide(); else Pulse.maybeAuto();
     if (r.page === "staff") Staff.render(view, r.parts);
     else if (r.page === "grades") Student.renderGrades(view);
     else Student.renderSupport(view, r.section);
@@ -90,6 +91,7 @@
 
   // "Reset demo" footer button (student and staff pages)
   document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-pulse-demo]")) { Pulse.show(true); return; }
     if (!e.target.closest("[data-reset]")) return;
     Store.reset();
     UI.toast("Demo data reset.");

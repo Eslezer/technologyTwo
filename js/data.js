@@ -18,7 +18,7 @@ window.DEMO = {
   keyDates: [
     { id: "census", label: "Census date", detail: "Last day to drop a subject without paying fees", date: "2026-10-02" },
     { id: "withdraw", label: "Withdraw without academic penalty", detail: "You still pay fees, but no fail is recorded", date: "2026-11-13" },
-    { id: "checkin", label: "Wellbeing check-in due", detail: "Mandatory once per trimester", date: "2026-11-13" },
+    { id: "checkin", label: "Mid-trimester check-in closes", detail: "Optional. Take part to enter the prize draw", date: "2026-11-13" },
     { id: "exams", label: "Exam period starts", detail: "Check your timetable for exam times", date: "2026-11-30" },
   ],
 
@@ -144,12 +144,13 @@ window.DEMO = {
   surveys: [
     {
       id: "checkin",
-      required: true,
-      title: "Trimester 3 wellbeing check-in",
-      summary: "A short check-in on how your study and life are going. Everyone completes it once each trimester.",
+      featured: true,
+      title: "Mid-trimester wellbeing check-in",
+      summary: "A short check-in on how your study and life are going.",
       minutes: 3,
       due: "2026-11-13",
-      why: "It helps us spot when students need support early, before the withdrawal deadline.",
+      prize: "one of five $200 cash prizes",
+      why: "It helps us spot when students need support early, before the withdrawal deadline. It's optional, and everyone who completes it goes in the prize draw.",
       who: "Your Student Support Advisor and the wellbeing team. Your lecturers only see whether you completed it, not your answers.",
       questions: [
         { id: "coping", type: "scale", label: "Overall, how are you coping with uni this trimester?", low: "Struggling", high: "Doing well", required: true },

@@ -54,6 +54,7 @@ window.UI = (function () {
     ok: { label: "On track", icon: "check" },
     watch: { label: "Keep an eye on", icon: "info" },
     alert: { label: "Needs attention", icon: "alert" },
+    info: { label: "Optional", icon: "spark" },
   };
   function chip(level, text) {
     const l = LEVEL[level];

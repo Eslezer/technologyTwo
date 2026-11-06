@@ -490,7 +490,11 @@ table.privacy th { font-size: 12px; text-transform: uppercase; color: var(--mute
 .survey-card summary { cursor: pointer; color: var(--link); font-weight: 600; }
 .survey-card details p { margin: 6px 0 0; }
 .survey-card .foot { display: flex; gap: 8px; margin-top: auto; padding-top: 6px; flex-wrap: wrap; }
-.survey-card.required { border-color: #b8d4ea; box-shadow: inset 0 3px 0 var(--jcu-blue); }
+.survey-card.featured { border-color: #b8d4ea; box-shadow: inset 0 3px 0 var(--jcu-blue); }
+.prize-line { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--jcu-blue-dark); background: var(--jcu-blue-tint); border-radius: 6px; padding: 8px 10px; margin: 0; }
+.prize-line svg { color: var(--jcu-blue); flex-shrink: 0; }
+.banner.prize { background: linear-gradient(90deg, #e8f1f9, #f3ecf8); border-color: #c9d9ec; }
+.banner.prize .b-icon { color: #8a3fa0; }
 
 /* ---------- Modal ---------- */
 dialog.modal {
